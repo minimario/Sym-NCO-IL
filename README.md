@@ -71,7 +71,7 @@ python run.py --label_aug
 python run.py --consistancy_learning
 ```
 
-**AM with Semi-supervised symmetric learning **
+**AM with Semi-supervised symmetric learning**
 
 ```bash
 python run.py --label_aug --consistancy_learning
