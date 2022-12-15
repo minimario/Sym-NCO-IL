@@ -100,6 +100,8 @@ python run.py --label_aug --consistancy_learning
 * If you want to make your paper based on this code, please consider to refer:
 
 
+
+**AM with Imitation Learning for Hardware Routing**
 ```
 @inproceedings{kim2021imitation,
   title={Imitation Learning for Simultaneous Escape Routing},
@@ -111,6 +113,7 @@ python run.py --label_aug --consistancy_learning
 }
 ```
 
+**Sym-NCO**
 ```
 @article{kim2022sym,
   title={Sym-NCO: Leveraging Symmetricity for Neural Combinatorial Optimization},
@@ -120,7 +123,7 @@ python run.py --label_aug --consistancy_learning
 }
 ```
 
-
+**AM-IL with placement symmetricity for multi-task hardware placement**
 ```
 @inproceedings{kimcollaborative,
   title={Collaborative symmetricity exploitation for offline learning of hardware design solver},
