@@ -24,7 +24,6 @@ This code is originally implemented based on  [Attention Model](https://github.c
 }
 ```
 
-There was slight modifications: 
 
 
 
