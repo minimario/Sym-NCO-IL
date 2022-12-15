@@ -92,7 +92,7 @@ python run.py --label_aug --consistancy_learning
 ## Important Remark
 
 * Read code for AM first!! [Attention Model](https://github.com/wouterkool/attention-learn-to-route)
-* Only code for TSP is implemented, but other problems can be easilty implemented.
+* Only code for TSP is implemented, but other problems can be easily implemented.
 * I did not implement "eval.py". I just check performances via validation score at "run.py". However, it is recommented to modify "eval.py".
 
 ## Reference
