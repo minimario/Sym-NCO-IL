@@ -3,6 +3,7 @@
 import os
 import json
 import pprint as pp
+import wandb
 
 import torch
 import torch.optim as optim
@@ -169,4 +170,9 @@ def run(opts):
 
 
 if __name__ == "__main__":
-    run(get_options())
+    options = get_options()
+    wandb.init(project="routing-symmetric", entity="routing_symmetric")
+    wandb.run.name = options.wandb_run_name
+    wandb.config.update(options)
+    run(options)
+

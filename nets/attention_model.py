@@ -10,6 +10,8 @@ from torch.nn import DataParallel
 from utils.beam_search import CachedLookup
 from utils.functions import sample_many
 
+import numpy as np
+
 
 
 def set_decode_type(model, decode_type):
@@ -122,7 +124,34 @@ class AttentionModel(nn.Module):
         if temp is not None:  # Do not change temperature if not provided
             self.temp = temp
 
-    def forward(self, input, action=None, return_pi=False):
+    def randomly_transform_pi(self, pi):
+        # set numpy random seed
+        def unpack_routes(routes):
+            return [r[r != 0] for r in np.split(routes, np.where(routes == 0)[0]) if (r != 0).any()]
+        
+        def permute_routes(routes):
+            np.random.shuffle(routes)
+            for i in range(len(routes)):
+                if np.random.randint(2) == 1:
+                    routes[i] = routes[i][::-1]
+            return routes
+
+        def pack_routes(routes, max_len_tour, left_pad=0, right_pad=None):
+            routes = np.concatenate([r_ for r in routes for r_ in (r, [0])])[:-1]
+            max_len_tour = max_len_tour or len(routes)
+            right_pad = (max_len_tour - len(routes) - left_pad) if right_pad is None else right_pad
+            return np.pad(routes, (left_pad, right_pad)).astype(np.int16) 
+
+        def go(pi):
+            routes = [unpack_routes(routes) for routes in pi.detach().cpu().numpy()]
+            routes = [permute_routes(routes) for routes in routes]
+            routes = [pack_routes(routes, max_len_tour=pi.size(-1)) for routes in routes]
+            routes = [torch.tensor(route, device=pi.device, dtype=pi.dtype) for route in routes]
+            return torch.stack(routes)
+        # return pi 
+        return go(pi)
+
+    def forward(self, input, num_equivariant_samples, action=None, return_pi=False):
         """
         :param input: (batch_size, graph_size, node_dim) input node features or dictionary with multiple tensors
         :param return_pi: whether to return the output sequences, this is optional as it is not compatible with
@@ -135,7 +164,18 @@ class AttentionModel(nn.Module):
         else:
             embeddings, _ = self.embedder(self._init_embed(input))
 
-        _log_p, pi = self._inner(input, embeddings,action)
+        _log_p, pi = self._inner(input, embeddings, action)
+    
+        if num_equivariant_samples > 0:
+            pi_t_list = []
+            ll_t_list = []
+            for i in range(num_equivariant_samples):
+                pi_t = self.randomly_transform_pi(pi)
+                _log_p_t, _ = self._inner(input, embeddings, action=pi_t)
+                cost_t, mask_t = self.problem.get_costs(input, pi_t)
+                ll_t = self._calc_log_likelihood(_log_p_t, pi_t, mask_t)
+                pi_t_list.append(pi_t)
+                ll_t_list.append(ll_t)
 
         
         if action==None:
@@ -156,9 +196,15 @@ class AttentionModel(nn.Module):
         # DataParallel since sequences can be of different lengths
         # ll = self._calc_log_likelihood(_log_p, pi, mask)
         if return_pi:
-            return cost, ll, pi
+            if num_equivariant_samples > 0:
+                return cost, ll, pi, ll_t_list, pi_t_list
+            else:
+                return cost, ll, pi
 
-        return cost, ll
+        if num_equivariant_samples > 0:
+            return cost, ll, ll_t_list
+        else:
+            return cost, ll
 
     def beam_search(self, *args, **kwargs):
         return self.problem.beam_search(*args, **kwargs, model=self)
