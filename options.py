@@ -78,6 +78,7 @@ def get_options(args=None):
     parser.add_argument('--no_progress_bar', action='store_true', help='Disable progress bar')
     parser.add_argument('--num_equivariant_samples', type=int, default=0, help="number of symmetric samples in loss") # TODO(alex): add doc
     parser.add_argument('--supervise_lambda', type=float, default=0.01, help='weight for the supervision loss')
+    parser.add_argument('--num_input_augmentations', type=float, default=4, help='number of input augmentations')
 
     opts = parser.parse_args(args)
 

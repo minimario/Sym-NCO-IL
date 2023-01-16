@@ -101,7 +101,7 @@ def train_epoch(model, optimizer, baseline, lr_scheduler, epoch, val_dataset, pr
     # Dataloader for unlabeled data
     training_dataset = baseline.wrap_dataset(problem.make_dataset(
         size=opts.graph_size, num_samples=1000, distribution=opts.data_distribution))
-    training_dataloader_ul = DataLoader(training_dataset, batch_size=opts.batch_size*10, num_workers=1)
+    training_dataloader_ul = DataLoader(training_dataset, batch_size=opts.batch_size, num_workers=1)
 
 
     # Put model in train mode!
@@ -298,10 +298,10 @@ def train_batch(
     # supervised augmetation with symmetric transformation
     if opts.label_aug:
         if opts.problem == "cvrp":
-            x = augment_cvrp(x, 4)
+            x = augment_cvrp(x, opts.num_input_augmentations)
         elif opts.problem == "tsp":
-            x = augment(x, 4)
-        solution = solution.repeat(4, 1)
+            x = augment(x, opts.num_input_augmentations)
+        solution = solution.repeat(opts.num_input_augmentations, 1)
 
     # Supervised Imitation Learning
     if opts.num_equivariant_samples > 0:
