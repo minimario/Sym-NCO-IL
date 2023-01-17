@@ -78,25 +78,8 @@ def train_epoch(model, optimizer, baseline, lr_scheduler, epoch, val_dataset, pr
 
     # Generate new training data for each epoch
     training_dataset = baseline.wrap_dataset(problem.make_dataset(
-        size=opts.graph_size, num_samples=100, filename=opts.train_dataset, distribution=opts.data_distribution))
+        size=opts.graph_size, num_samples=100000000, filename=opts.train_dataset, distribution=opts.data_distribution))
     training_dataloader = DataLoader(training_dataset, batch_size=opts.batch_size, num_workers=1)
-    
-
-
-    with open(opts.labelpath, 'rb') as f:  
-        data = pickle.load(f)
-
-    # Data Pre-processing
-    sol_list = []
-
-    for i in range(100):
-        sol_list.append(data[0][i][1])
-
-    # for CVRP, may need to pad with zeros
-    max_len = max([len(i) for i in sol_list])
-    sol_list = [i + [0] * (max_len - len(i)) for i in sol_list]
-    solution = np.array(sol_list)
-    solution = torch.tensor(solution).long().cuda()
 
     # Dataloader for unlabeled data
     training_dataset = baseline.wrap_dataset(problem.make_dataset(
@@ -109,6 +92,26 @@ def train_epoch(model, optimizer, baseline, lr_scheduler, epoch, val_dataset, pr
     set_decode_type(model, "sampling")
 
     for batch_id, batch in enumerate(tqdm(training_dataloader, disable=opts.no_progress_bar)):
+
+        # process the solution
+        with open(opts.labelpath, 'rb') as f:  
+            data = pickle.load(f)
+
+        # Data Pre-processing
+        sol_list = []
+
+        for i in range((batch_id)*opts.batch_size, (batch_id+1)*opts.batch_size):
+            try:
+                sol_list.append(data[0][i][1])
+            except:
+                # out of bounds
+                pass
+
+        # for CVRP, may need to pad with zeros
+        max_len = max([len(i) for i in sol_list])
+        sol_list = [i + [0] * (max_len - len(i)) for i in sol_list]
+        solution = np.array(sol_list)
+        solution = torch.tensor(solution).long().cuda()
         
         train_batch(
             model,
@@ -120,7 +123,8 @@ def train_epoch(model, optimizer, baseline, lr_scheduler, epoch, val_dataset, pr
             batch,
             tb_logger,
             opts, 
-            solution[(batch_id)*opts.batch_size:(batch_id+1)*opts.batch_size],
+            solution,
+            # solution[(batch_id)*opts.batch_size:(batch_id+1)*opts.batch_size],
             next(iter(training_dataloader_ul))
         )
 
